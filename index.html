@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegraph Clone</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --gray-color: #999999;
+            --light-gray: #f4f4f5;
+            --border-color: #e6e6e6;
+            --accent-color: #1f1f1f;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        header h1 {
+            font-size: 18px;
+            margin: 0;
+            font-weight: 400;
+        }
+        header a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        .nav-links button, .nav-links a {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-color);
+            text-decoration: none;
+            margin-left: 8px;
+        }
+        .nav-links button:hover, .nav-links a:hover {
+            background-color: var(--light-gray);
+        }
+        .post-item {
+            margin-bottom: 24px;
+        }
+        .post-item h2 {
+            font-size: 22px;
+            margin: 0 0 6px 0;
+            font-weight: 500;
+        }
+        .post-item h2 a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        .post-item h2 a:hover {
+            text-decoration: underline;
+        }
+        .post-meta {
+            font-size: 14px;
+            color: var(--gray-color);
+        }
+        .post-title {
+            font-size: 38px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+        .post-author-date {
+            color: var(--gray-color);
+            margin-bottom: 35px;
+            font-size: 15px;
+        }
+        .post-author-date a {
+            color: var(--gray-color);
+            text-decoration: underline;
+        }
+        .post-content {
+            font-size: 18px;
+            word-break: break-word;
+        }
+        .post-content p {
+            margin-bottom: 20px;
+        }
+        .post-content h3 {
+            font-size: 22px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .post-content blockquote {
+            border-left: 3px solid var(--text-color);
+            margin: 20px 0;
+            padding-left: 16px;
+            color: #444;
+            font-style: italic;
+        }
+        .post-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 20px 0;
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        input[type="text"], input[type="password"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        textarea {
+            height: 350px;
+            resize: vertical;
+        }
+        .toolbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .toolbar button {
+            background: var(--light-gray);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .toolbar button:hover {
+            background: var(--border-color);
+        }
+        button.primary {
+            background-color: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button.primary:hover {
+            opacity: 0.9;
+        }
+        .error { color: #d9534f; margin-top: 10px; font-size: 14px; }
+        .loading-overlay { font-size: 15px; color: var(--gray-color); }
+        .preview-box {
+            border: 1px dashed var(--border-color);
+            padding: 20px;
+            border-radius: 4px;
+            background: var(--light-gray);
+            min-height: 350px;
+            margin-bottom: 16px;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app"></div>
+
+    <script>
+        const CONFIG = {
+            repo: 'mcorevz/mcrvc-blog'
+        };
+
+        const app = document.getElementById('app');
+
+        function getToken() {
+            return localStorage.getItem('gh_token') || '';
+        }
+
+        function setToken(token) {
+            localStorage.setItem('gh_token', token);
+        }
+
+        function stringToB64(str) {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+                return String.fromCharCode('0x' + p1);
+            }));
+        }
+
+        function b64ToString(b64) {
+            return decodeURIComponent(atob(b64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        }
+
+        function router() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#post/')) {
+                renderPost(hash.replace('#post/', ''));
+            } else if (hash === '#editor') {
+                renderEditor();
+            } else if (hash === '#settings') {
+                renderSettings();
+            } else {
+                renderHome();
+            }
+        }
+
+        window.addEventListener('hashchange', router);
+        window.addEventListener('load', router);
+
+        async function renderHome() {
+            app.innerHTML = `
+                <header>
+                    <h1><a href="#">Мои статьи</a></h1>
+                    <div class="nav-links">
+                        ${getToken() ? '<a href="#editor">Написать</a> <a href="#settings">Настройки</a>' : '<a href="#settings">Вход</a>'}
+                    </div>
+                </header>
+                <div id="posts-list" class="loading-overlay">Загрузка статей...</div>
+            `;
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/posts`);
+                if (!res.ok) {
+                    document.getElementById('posts-list').innerHTML = '<p style="color: var(--gray-color);">Статей пока нет.</p>';
+                    return;
+                }
+                const files = await res.json();
+                const jsonFiles = files.filter(f => f.name.endsWith('.json')).reverse();
+
+                if (jsonFiles.length === 0) {
+                    document.getElementById('posts-list').innerHTML = '<p style="color: var(--gray-color);">Пока нет ни одной опубликованной статьи.</p>';
+                    return;
+                }
+
+                let html = '';
+                for (const file of jsonFiles) {
+                    try {
+                        const postRes = await fetch(file.download_url);
+                        const data = await postRes.json();
+                        const dateStr = new Date(data.date).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' });
+                        
+                        html += `
+                            <div class="post-item">
+                                <h2><a href="#post/${file.name}">${escapeHtml(data.title)}</a></h2>
+                                <div class="post-meta">${escapeHtml(data.author || 'Автор')} • ${dateStr}</div>
+                            </div>
+                        `;
+                    } catch (e) {}
+                }
+                document.getElementById('posts-list').innerHTML = html;
+            } catch (err) {
+                document.getElementById('posts-list').innerHTML = `<p style="color: var(--gray-color);">Ошибка загрузки. Проверьте CONFIG.repo в коде.</p>`;
+            }
+        }
+
+        async function renderPost(filename) {
+            app.innerHTML = `
+                <header>
+                    <h1><a href="#">← На главную</a></h1>
+                    <div class="nav-links"></div>
+                </header>
+                <div class="loading-overlay">Загрузка статьи...</div>
+            `;
+
+            try {
+                const fileRes = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/posts/${filename}`);
+                if (!fileRes.ok) throw new Error('Не найдено');
+                const fileData = await fileRes.json();
+                
+                const data = JSON.parse(b64ToString(fileData.content));
+                const dateStr = new Date(data.date).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                let authorHtml = escapeHtml(data.author || '');
+                if (data.authorUrl) {
+                    authorHtml = `<a href="${escapeHtml(data.authorUrl)}" target="_blank">${authorHtml}</a>`;
+                }
+
+                app.innerHTML = `
+                    <header>
+                        <h1><a href="#">← На главную</a></h1>
+                        <div class="nav-links">
+                            ${getToken() ? `
+                                <button onclick="editPost('${filename}')">Изменить</button>
+                                <button onclick="deletePost('${filename}')" style="color: #d9534f; border-color: #d9534f;">Удалить</button>
+                            ` : ''}
+                        </div>
+                    </header>
+                    <article>
+                        <h1 class="post-title">${escapeHtml(data.title)}</h1>
+                        <div class="post-author-date">
+                            ${authorHtml ? authorHtml + ' • ' : ''}${dateStr}
+                        </div>
+                        <div class="post-content">${data.content}</div>
+                    </article>
+                `;
+            } catch (err) {
+                app.innerHTML = `<header><h1><a href="#">← На главную</a></h1></header><p>Статья не найдена.</p>`;
+            }
+        }
+
+        function renderEditor(editData = null) {
+            if (!getToken()) {
+                window.location.hash = '#settings';
+                return;
+            }
+
+            const isEditing = editData !== null;
+            app.innerHTML = `
+                <header>
+                    <h1><a href="#">← На главную</a></h1>
+                    <div class="nav-links">
+                        <button type="button" onclick="togglePreview()" id="preview-btn">👁 Предпросмотр</button>
+                    </div>
+                </header>
+                <h2 style="font-weight: 500; margin-bottom: 20px;">${isEditing ? 'Редактирование статьи' : 'Новая статья'}</h2>
+                
+                <div class="form-group">
+                    <input type="text" id="post-title" placeholder="Заголовок" value="${isEditing ? escapeHtml(editData.title) : ''}">
+                </div>
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <input type="text" id="post-author" placeholder="Имя автора" value="${isEditing ? escapeHtml(editData.author || '') : ''}">
+                    <input type="text" id="post-author-url" placeholder="Ссылка автора (необязательно)" value="${isEditing ? escapeHtml(editData.authorUrl || '') : ''}">
+                </div>
+
+                <div class="toolbar" id="editor-toolbar">
+                    <button type="button" onclick="formatText('b')"><b>B</b></button>
+                    <button type="button" onclick="formatText('i')"><i>I</i></button>
+                    <button type="button" onclick="formatText('h3')">H3</button>
+                    <button type="button" onclick="formatText('blockquote')">“ ”</button>
+                    <button type="button" onclick="formatLink()">🔗 Ссылка</button>
+                    <button type="button" onclick="document.getElementById('image-file-input').click()">📷 Картинка</button>
+                    <input type="file" id="image-file-input" accept="image/*" style="display:none" onchange="uploadImage(this)">
+                </div>
+
+                <div class="form-group" id="editor-textarea-container">
+                    <textarea id="post-content" placeholder="Напишите текст статьи...">${isEditing ? editData.content : ''}</textarea>
+                </div>
+
+                <div id="preview-container" class="hidden">
+                    <div class="preview-box">
+                        <h1 id="preview-title" style="font-size: 28px; margin-top: 0;"></h1>
+                        <div id="preview-content" class="post-content"></div>
+                    </div>
+                </div>
+
+                <button class="primary" onclick="publishArticle('${isEditing ? editData.filename : ''}')">Опубликовать</button>
+                <div id="editor-error" class="error"></div>
+            `;
+        }
+
+        let isPreviewMode = false;
+        function togglePreview() {
+            isPreviewMode = !isPreviewMode;
+            const textareaContainer = document.getElementById('editor-textarea-container');
+            const previewContainer = document.getElementById('preview-container');
+            const toolbar = document.getElementById('editor-toolbar');
+            const btn = document.getElementById('preview-btn');
+
+            if (isPreviewMode) {
+                const title = document.getElementById('post-title').value;
+                const content = document.getElementById('post-content').value;
+                
+                document.getElementById('preview-title').textContent = title || 'Без названия';
+                document.getElementById('preview-content').innerHTML = content;
+
+                textareaContainer.classList.add('hidden');
+                toolbar.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+                btn.textContent = '✏️ Редактировать';
+            } else {
+                textareaContainer.classList.remove('hidden');
+                toolbar.classList.remove('hidden');
+                previewContainer.classList.add('hidden');
+                btn.textContent = '👁 Предпросмотр';
+            }
+        }
+
+        function formatText(tag) {
+            const textarea = document.getElementById('post-content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            const replacement = `<${tag}>${selectedText}</${tag}>`;
+            textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + tag.length + 2, end + tag.length + 2);
+        }
+
+        function formatLink() {
+            const url = prompt('Введите URL ссылки:', 'https://');
+            if (!url) return;
+            const textarea = document.getElementById('post-content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end) || url;
+            
+            const replacement = `<a href="${url}" target="_blank">${selectedText}</a>`;
+            textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+            textarea.focus();
+        }
+
+        async function uploadImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const errorEl = document.getElementById('editor-error');
+            errorEl.textContent = 'Очистка метаданных и загрузка картинки...';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    const cleanBase64Url = canvas.toDataURL('image/jpeg', 0.9);
+                    const base64Content = cleanBase64Url.split(',')[1];
+                    
+                    const filename = `images/img_${Date.now()}.jpg`;
+                    const token = getToken();
+
+                    try {
+                        const res = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/${filename}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                message: `Upload clean image ${filename}`,
+                                content: base64Content
+                            })
+                        });
+
+                        if (res.ok) {
+                            const rawUrl = `https://raw.githubusercontent.com/${CONFIG.repo}/main/${filename}`;
+                            const textarea = document.getElementById('post-content');
+                            textarea.value += `\n\n<img src="${rawUrl}" alt="image" />\n\n`;
+                            errorEl.textContent = '';
+                        } else {
+                            errorEl.textContent = 'Ошибка загрузки картинки на GitHub.';
+                        }
+                    } catch (err) {
+                        errorEl.textContent = `Ошибка сети: ${err.message}`;
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function publishArticle(existingFilename = '') {
+            const title = document.getElementById('post-title').value.trim();
+            const author = document.getElementById('post-author').value.trim();
+            const authorUrl = document.getElementById('post-author-url').value.trim();
+            const content = document.getElementById('post-content').value.trim();
+            const errorEl = document.getElementById('editor-error');
+
+            if (!title || !content) {
+                errorEl.textContent = 'Заполните заголовок и текст статьи.';
+                return;
+            }
+
+            errorEl.textContent = 'Публикация...';
+            const token = getToken();
+            let filename = existingFilename;
+
+            if (!filename) {
+                const slug = translit(title).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 50) || 'post';
+                filename = `${slug}-${Date.now().toString().slice(-4)}.json`;
+            }
+
+            const postObj = { title, author, authorUrl, content, date: new Date().toISOString() };
+            const fileContentBase64 = stringToB64(JSON.stringify(postObj));
+
+            let sha = null;
+            try {
+                const checkRes = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/posts/${filename}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (checkRes.ok) {
+                    const checkData = await checkRes.json();
+                    sha = checkData.sha;
+                }
+            } catch (e) {}
+
+            const bodyData = {
+                message: `Publish/Update: ${title}`,
+                content: fileContentBase64
+            };
+            if (sha) bodyData.sha = sha;
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/posts/${filename}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(bodyData)
+                });
+
+                if (res.ok) {
+                    window.location.hash = `#post/${filename}`;
+                } else {
+                    const errJson = await res.json();
+                    errorEl.textContent = `Ошибка: ${errJson.message || res.statusText}`;
+                }
+            } catch (err) {
+                errorEl.textContent = `Ошибка сети: ${err.message}`;
+            }
+        }
+
+        async function editPost(filename) {
+            try {
+                const fileRes = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/posts/${filename}`);
+                const fileData = await fileRes.json();
+                const data = JSON.parse(b64ToString(fileData.content));
+                renderEditor({ 
+                    filename, 
+                    title: data.title, 
+                    author: data.author, 
+                    authorUrl: data.authorUrl, 
+                    content: data.content 
+                });
+            } catch (e) {
+                alert('Не удалось загрузить статью.');
+            }
+        }
+
+        async function deletePost(filename) {
+            if (!confirm('Удалить эту статью?')) return;
+            const token = getToken();
+
+            try {
+                const checkRes = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/posts/${filename}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!checkRes.ok) throw new Error('Не найдено');
+                const checkData = await checkRes.json();
+
+                const res = await fetch(`https://api.github.com/repos/${CONFIG.repo}/contents/posts/${filename}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: `Delete ${filename}`, sha: checkData.sha })
+                });
+
+                if (res.ok) {
+                    window.location.hash = '#';
+                } else {
+                    alert('Не удалось удалить статью.');
+                }
+            } catch (e) {
+                alert(`Ошибка: ${e.message}`);
+            }
+        }
+
+        function renderSettings() {
+            const currentToken = getToken();
+            app.innerHTML = `
+                <header>
+                    <h1><a href="#">← На главную</a></h1>
+                </header>
+                <h2 style="font-weight: 500; margin-bottom: 10px;">Настройки авторизации</h2>
+                <p style="color: var(--gray-color); font-size: 14px; margin-bottom: 20px;">Введите ваш GitHub Personal Access Token (с правами repo).</p>
+                <div class="form-group">
+                    <input type="password" id="gh-token-input" placeholder="ghp_..." value="${currentToken}">
+                </div>
+                <button class="primary" onclick="saveToken()">Сохранить</button>
+                ${currentToken ? '<button onclick="logout()" style="margin-left: 10px; padding: 12px 20px; border: 1px solid #d9534f; background: none; color: #d9534f; border-radius: 4px; cursor: pointer;">Выйти</button>' : ''}
+            `;
+        }
+
+        function saveToken() {
+            const val = document.getElementById('gh-token-input').value.trim();
+            if (val) {
+                setToken(val);
+                window.location.hash = '#';
+            } else {
+                alert('Введите токен');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('gh_token');
+            window.location.hash = '#';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function translit(word) {
+            const encoder = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'j', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch', 'ш': 'sh', 'щ': 'shh', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'э', 'ю': 'yu', 'я': 'ya'
+            };
+            return word.toLowerCase().split('').map(char => encoder[char] || char).join('');
+        }
+    </script>
+</body>
+</html>
